@@ -3,6 +3,7 @@ import shutil
 import os
 import sys
 import string
+import configparser
 
 from RetroManagerDatabase import *
 
@@ -40,7 +41,9 @@ class RetroManagerCore():
        
     def createDeviceConfigFile(self, mountpoint):
         #Check the drive is actually mounted
-        
+        if not os.path.exists(mountpoint):
+            print(f"CREATECONFIG - failed to find {mountpoint}")
+            return False
         #Check if a config file already exists
             
         #Create the empty config file
@@ -49,3 +52,22 @@ class RetroManagerCore():
         
     def retrieveGamesFromLocation(self, basePath):
         return False
+        
+        
+class RetroManagerDevice():
+    _static_ConfigFileName = "RetroManager.conf"
+    _static_general = "General"
+    _static_general_devicename = "Name"
+    name = ""
+    mountpoint = ""
+
+    def __init__(self, mountpoint):
+        super().__init__()
+        self.mountpoint = mountpoint
+        config = configparser.ConfigParser()
+        config.read(os.path.join(mountpoint, self._static_ConfigFileName))
+        config.sections()
+        if self._static_general in config:
+            generalConfig = config[self._static_general]           
+            if self._static_general_devicename in generalConfig:
+                self.name = generalConfig[self._static_general_devicename]

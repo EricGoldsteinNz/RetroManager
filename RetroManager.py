@@ -3,10 +3,12 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
+#RetroManager imports
 from RetroManagerDatabase import *
 from RetroManagerCore import *
 
 import psutil
+import configparser
 
 driveHistory = []
 openDevices = []
@@ -150,10 +152,18 @@ class MainWindow (QMainWindow):
     
     def openDevice(self, mountpoint):
         print(f"Opening Device")
+        device = RetroManagerDevice(mountpoint)
+        #TODO create config file if it doesnt exist
+        #RMCore.createDeviceConfigFile(mountpoint)
         openDevices.append(mountpoint)
         #Create Library Tab
         tab_openDevice = QWidget()
-        self.tabs.addTab(tab_openDevice, mountpoint)
+        tabname = ""
+        if device.name == "":
+            tabname = device.mountpoint
+        else:
+            tabname = device.name
+        self.tabs.addTab(tab_openDevice, tabname)
         tab_openDevice.layout = QGridLayout(tab_openDevice)
 
         #Game Table Widget
