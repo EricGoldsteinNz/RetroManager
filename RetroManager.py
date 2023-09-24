@@ -6,9 +6,12 @@ from PyQt5.QtGui import *
 #RetroManager imports
 from RetroManagerDatabase import *
 from RetroManagerCore import *
+from RetroManagerDevice import RetroManagerDevice
 
 import psutil
 import configparser
+import os
+import logging
 
 driveHistory = []
 openDevices = []
@@ -17,6 +20,7 @@ openDevices = []
 
 RMCore = RetroManagerCore()
 
+static_LoggingPath = os.path.join(os.path.expanduser("~"), "RetroManager", "retromanager.log")  
 
 #SubClass QMainWindow to create a Tadpole general interface
 class MainWindow (QMainWindow):
@@ -35,7 +39,6 @@ class MainWindow (QMainWindow):
         "Publisher"
     ]    
     
-    gameslist = []
     
     def __init__(self):
         super().__init__()
@@ -52,9 +55,7 @@ class MainWindow (QMainWindow):
         #Load the ribbon Menus  
         self.loadMenus()     
         
-        # Right Click Menu
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.loadRightClickMenu)
+       
         
         self.layout = QGridLayout(widget)
         
@@ -67,16 +68,22 @@ class MainWindow (QMainWindow):
         self.tabs.addTab(self.tab_library, "Library")
         
         self.tab_library.layout = QGridLayout(self.tab_library)
+        
+        self.tab_library.gameslist = []
 
         #Game Table Widget
-        self.tbl_gamelist = QTableWidget()
-        self.tbl_gamelist.setColumnCount(5)
-        self.tbl_gamelist.setHorizontalHeaderLabels(self.library_columns)
-        self.tbl_gamelist.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeToContents)
-        self.tbl_gamelist.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeToContents)       
-        self.tab_library.layout.addWidget(self.tbl_gamelist)
-        self.tbl_gamelist.itemChanged.connect(self.catchTableItemChanged)
-        self.tbl_gamelist.show()
+        self.tab_library.tbl_gamelist = QTableWidget()
+        self.tab_library.tbl_gamelist.setColumnCount(5)
+        self.tab_library.tbl_gamelist.setHorizontalHeaderLabels(self.library_columns)
+        self.tab_library.tbl_gamelist.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeToContents)
+        self.tab_library.tbl_gamelist.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeToContents)       
+        self.tab_library.layout.addWidget(self.tab_library.tbl_gamelist)
+        self.tab_library.tbl_gamelist.itemChanged.connect(self.catchTableItemChanged)
+        self.tab_library.tbl_gamelist.show()
+        
+        # Right Click Menu
+        self.tab_library.tbl_gamelist.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tab_library.tbl_gamelist.customContextMenuRequested.connect(self.loadRightClickMenu_LibraryTable)
         
         """
         self.tblview_gamelist = QTableView()
@@ -86,7 +93,7 @@ class MainWindow (QMainWindow):
         self.tblview_gamelist.show();
         """
         #load All Game Data on Opening
-        self.loadAllGamesToTable()
+        self.loadAllGamesToLibraryTable()
         
         
     def toggle_features(enable: bool):
@@ -102,7 +109,7 @@ class MainWindow (QMainWindow):
         self.menu_file = self.menuBar().addMenu("&File")
         action_about = QAction("&About", self, triggered=self.about)
         self.menu_file.addAction(action_about)
-        action_openDevice = QAction("Open Device", self, triggered=self.openDevice)
+        action_openDevice = QAction("Open Device", self, triggered=self.menu_openDevice)
         self.menu_file.addAction(action_openDevice)
         action_exit = QAction("E&xit", self, shortcut="Ctrl+Q",triggered=self.close)
         self.menu_file.addAction(action_exit)
@@ -115,11 +122,14 @@ class MainWindow (QMainWindow):
         self.action_AddGames = QAction("Add Games...", self, triggered=self.importGames)
         self.menu_library.addAction(self.action_AddGames)
         
+        #Library Menu 
+        self.action_AddGamesIcon = QAction("Add Games...", self, triggered=self.importGames)    
+        self.menu_addGame= self.menuBar().addAction(self.action_AddGamesIcon)
         
-        
-    def loadRightClickMenu(self, pos):
+    def loadRightClickMenu_LibraryTable(self, pos):
         menu = QMenu()
-
+        activeTab = self.tabs.currentWidget()
+        
         #Send to Device
         rightClick_sendToDevice = menu.addMenu('Send to Device')
         if len(openDevices) == 0:
@@ -127,35 +137,60 @@ class MainWindow (QMainWindow):
             device_option.setEnabled(False)
         else:
             for device in openDevices:
-                device_option = rightClick_sendToDevice.addAction(device)
-                
+                device_option = rightClick_sendToDevice.addAction(f"Send to {device.name}")
                 device_option.triggered.connect(lambda checked, device=device: self.sendGamesToDevice(device))
-
-
         # Position
-        menu.exec_(self.mapToGlobal(pos))
+        menu.exec_(activeTab.mapToGlobal(pos))
+        
+        
+    def loadRightClickMenu_DeviceTable(self, pos):
+        menu = QMenu()
+        activeTab = self.tabs.currentWidget()
+        rightClick_sendToLibrary = menu.addAction("Send to Library")
+        rightClick_sendToLibrary.triggered.connect(self.sendGamesToLibrary)
+        # Position
+        menu.exec_(activeTab.mapToGlobal(pos)) 
         
     def sendGamesToDevice(self, device):
-        print(f"Sending games to device {device}")
-        
+        activeTab = self.tabs.currentWidget()
+        for item in activeTab.tbl_gamelist.selectedIndexes():
+            rmgameitem = activeTab.gameslist[item.row()]
+            logging.info(f"RetroManager~sendGamesToDevice: Selected Game - {rmgameitem.title}")
+        print(f"TODO: Implement Sending games to device {device.name} ({device.mountpoint})")
+      
+ 
+    def sendGamesToLibrary(self):
+        activeTab = self.tabs.currentWidget()
+        for item in activeTab.tbl_gamelist.selectedIndexes():
+            rmgameitem = activeTab.gameslist[item.row()]
+            print(f"RetroManager~sendGamesToLibrary: Selected Game - {rmgameitem.title}")
+        print(f"RetroManager~sendGamesToLibrary: TODO: Implement sending games from Device to Library")
+        return True
     
     def handle_TableEdit(self, tableWidget):
-        print(f"table widget changed {tableWidget}")
+        print(f"RetroManager~handle_TableEdit: table widget changed {tableWidget}")
 
     def about(self):
         QMessageBox.about(self, "About RetroManager","RetroManager was created by EricGoldstein because he got sick of losing all his saves")
 
     def testFunction(self):
         print("Running Test Function")
-        RMCore.rmdb.fetchGames()
+        print(f"trying to read {openDevices[0]}")
+        openDevices[0].scanForGames()
+         
     
+    def menu_openDevice(self):
+        print("Opening device")
+        directory = os.path.normpath(QFileDialog.getExistingDirectory()) # getExistingDirectory returns filepath slashes the wrong way around in some OS, lets fix that
+        if directory == '': #Check that the user actually selected a directory and didnt just close the window
+            return False
+
+        self.openDevice(directory)
     
     def openDevice(self, mountpoint):
-        print(f"Opening Device")
+        print(f"RetroManager~OpenDevice:    Opening Device {mountpoint}")
         device = RetroManagerDevice(mountpoint)
-        #TODO create config file if it doesnt exist
-        #RMCore.createDeviceConfigFile(mountpoint)
-        openDevices.append(mountpoint)
+        openDevices.append(device)
         #Create Library Tab
         tab_openDevice = QWidget()
         tabname = ""
@@ -167,82 +202,97 @@ class MainWindow (QMainWindow):
         tab_openDevice.layout = QGridLayout(tab_openDevice)
 
         #Game Table Widget
-        tbl_gamelist = QTableWidget()
-        tbl_gamelist.setColumnCount(5)
-        tbl_gamelist.setHorizontalHeaderLabels(self.library_columns)
-        tbl_gamelist.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeToContents)
-        tbl_gamelist.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeToContents)       
-        tab_openDevice.layout.addWidget(tbl_gamelist)
-        tbl_gamelist.itemChanged.connect(self.catchTableItemChanged)
-        tbl_gamelist.show()    
-
-        #TODO: Retrieve the games from the device
+        tab_openDevice.tbl_gamelist = QTableWidget()
+        tab_openDevice.tbl_gamelist.setColumnCount(5)
+        tab_openDevice.tbl_gamelist.setHorizontalHeaderLabels(self.library_columns)
+        tab_openDevice.tbl_gamelist.horizontalHeader().setSectionResizeMode(0,QHeaderView.ResizeToContents)
+        tab_openDevice.tbl_gamelist.horizontalHeader().setSectionResizeMode(1,QHeaderView.ResizeToContents)       
+        tab_openDevice.layout.addWidget(tab_openDevice.tbl_gamelist)
+        #Disabled this as the catch function references the library table rather than pulling the details properly
+        tab_openDevice.tbl_gamelist.itemChanged.connect(self.catchTableItemChanged)
+        tab_openDevice.tbl_gamelist.show()    
         
+        # Right Click Menu
+        tab_openDevice.tbl_gamelist.setContextMenuPolicy(Qt.CustomContextMenu)
+        tab_openDevice.tbl_gamelist.customContextMenuRequested.connect(self.loadRightClickMenu_DeviceTable)
+        
+        #Retrieve the games from the device
+        self.reloadTable(tab_openDevice, device.scanForGames())
         
     
     
     
     #tableData is a list of RetroManagerDatabase rmGame Objects
-    def reloadTable(self, tableData):
-        print(f"Reloading Table with {len(tableData)} items")
+    def reloadTable(self, tab, tableData):
+        print(f"Reloading Table {tab} with {len(tableData)} items")
         #Disable cell change tracking to avoid infinite looping
-        self.tbl_gamelist.itemChanged.disconnect()
-        self.tbl_gamelist.setRowCount(len(tableData))
+        tab.tbl_gamelist.itemChanged.disconnect()
+        tab.gameslist = tableData
+        tab.tbl_gamelist.setRowCount(len(tableData))
         for i,game in enumerate(tableData):            
-            self.tbl_gamelist.setItem(i,0,QTableWidgetItem(f"{game.title}")) #Filename
-            self.tbl_gamelist.setItem(i,1,QTableWidgetItem(f"{game.console}")) #Console
-            self.tbl_gamelist.setItem(i,2,QTableWidgetItem(f"{game.rating}")) #Rating
-            self.tbl_gamelist.setItem(i,3,QTableWidgetItem(f"{game.series}")) #Series
-            self.tbl_gamelist.setItem(i,4,QTableWidgetItem(f"{game.publisher}")) #Publisher
+            tab.tbl_gamelist.setItem(i,0,QTableWidgetItem(f"{game.title}")) #Filename
+            tab.tbl_gamelist.setItem(i,1,QTableWidgetItem(f"{game.console}")) #Console
+            tab.tbl_gamelist.setItem(i,2,QTableWidgetItem(f"{game.rating}")) #Rating
+            tab.tbl_gamelist.setItem(i,3,QTableWidgetItem(f"{game.series}")) #Series
+            tab.tbl_gamelist.setItem(i,4,QTableWidgetItem(f"{game.publisher}")) #Publisher
         #Restore cell change tracking
-        self.tbl_gamelist.itemChanged.connect(self.catchTableItemChanged)
+        tab.tbl_gamelist.itemChanged.connect(self.catchTableItemChanged)
 
 
-    def loadAllGamesToTable(self):
-        self.gameslist = RMCore.rmdb.fetchGames()
-        print(f"gameslist contains {len(self.gameslist)}")
-        self.reloadTable(self.gameslist)
+    def loadAllGamesToLibraryTable(self):
+        self.tab_library.gameslist = RMCore.rmdb.fetchGames()
+        print(f"gameslist contains {len(self.tab_library.gameslist)}")
+        self.reloadTable(self.tab_library, self.tab_library.gameslist)
     
     def importGames(self):
         try:
             #Use the multi file select dialog to allow bulk importing
-            file_paths = QFileDialog.getOpenFileNames(self, 'Select one or more games to import', '',"All Files (*.*)")
+            file_paths, _ = QFileDialog.getOpenFileNames(self, 'Select one or more games to import', '',"All Files (*.*)")
             #Pass the games to the Core to handle parsing and storage
-            return RMCore.importGames(file_paths)
+            RMCore.importGames(file_paths)
+            self.loadAllGamesToLibraryTable()
         except Exception as e:
             print (f"{str(e)}")
         return False
         
     def catchTableItemChanged(self, item):
+        #TODO: update this function to make sure the change is made to the correct tab games list. Could use active tab? 
+        #but that would mean that we can never make changes to a background tab 
         print(f"Cell changed ({item.row()},{item.column()})")
-        print(f"Changing linked game ({self.gameslist[item.row()].title})")
+        print(f"Changing linked game ({self.tab_library.gameslist[item.row()].title})")
         columnType = self.library_columns[item.column()]     
         if columnType == self.library_columns_Title:
-            self.gameslist[item.row()].title = item.text()
-            rmdb.updateGame(self.gameslist[item.row()])            
+            self.tab_library.gameslist[item.row()].title = item.text()
+            RMCore.rmdb.updateGame(self.tab_library.gameslist[item.row()])            
         elif columnType == self.library_columns_Console:
-            self.gameslist[item.row()].console = item.text()
-            rmdb.updateGame(self.gameslist[item.row()])   
+            self.tab_library.gameslist[item.row()].console = item.text()
+            RMCore.rmdb.updateGame(self.tab_library.gameslist[item.row()])   
     
     
     def checkForNewDevices(self):
         #Get the list of drives and compare it to the past history
         for drive in psutil.disk_partitions():            
             if drive not in self.driveHistory:
-                if self.checkIfDeviceIsRetroGames(drive):
-                    print(f"NEWDRIVEDETECTED: {self.driveHistory}")
+                if self.checkIfDeviceIsRetroGames(drive.mountpoint):
+                    print(f"RetroManager~checkForNewDevices: New drive detected {drive.mountpoint}")
                     window.status_bar.showMessage(f"New Drive Detected - {drive.mountpoint}", 20000)
                     self.openDevice(drive.mountpoint)
         self.driveHistory = psutil.disk_partitions()
         #TODO: Should probably check that all the open devices are still actually connected.
     
     def checkIfDeviceIsRetroGames(self, drive):
-        print(f"TODO: Implement drive check for {drive}")
-        return True
-        
-    
-    def testFunction(self):
-        print("Using Test Function")
+        print(f"RetroManager~checkIfDeviceIsRetroGames: Checking if drive is game device: {drive}")
+        return RetroManagerDevice.isRetroManagerDrive(drive)
+
+
+# Initialise logging
+print(f"{static_LoggingPath}")
+logging.basicConfig(filename=static_LoggingPath,
+                        filemode='a',
+                        format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                        datefmt='%H:%M:%S',
+                        level=logging.DEBUG)
+logging.info("RetroManager Started")
 
 #Initialise the Application
 app = QApplication(sys.argv)
@@ -252,11 +302,13 @@ window = MainWindow()
 window.show()
 
 
-window.driveHistory = psutil.disk_partitions()
+
+
+#window.driveHistory = psutil.disk_partitions()
+window.driveHistory = []
 # Listen for Devices Time
 timer = QTimer()
 timer.timeout.connect(window.checkForNewDevices)
 timer.start(1000)
 
 app.exec()
-

@@ -1,4 +1,5 @@
 import sqlite3
+import logging
 
 class RetroManagerDatabase():
 
@@ -6,7 +7,7 @@ class RetroManagerDatabase():
     def __init__(self, location):
         super().__init__()
         # Connect to the database, if it doesnt exist this call will instantiate one
-        print(f"Creating or opening {location}")
+        logging.info(f"Creating or opening {location}")
         self.db = sqlite3.connect(location)
         
         self.dbcursor = self.db.cursor()
@@ -48,12 +49,21 @@ class RetroManagerDatabase():
         resultsList = []
         
         for row in result:
-            print(row)
+            #print(row)
             game = rmGame(row[0], row[1], row[2], row[3])
             resultsList.append(game)
-        print(f"Found {len(resultsList)} game")
+        print(f"Found {len(resultsList)} games")
         return resultsList
-        
+
+    def fetchGameByTitle(self, title :str):
+        print(f"Searching for game by title ({title})")
+        result = self.dbcursor.execute("SELECT id, title, filepath, console FROM games WHERE title=?", title)
+        result = result.fetchone()
+        if not result is None: 
+            game = rmGame(result[0], result[1], result[2], result[3])
+            return game    
+        else:
+            return None
         
     def addGame(self, title="", filepath="", console="", rating=-1):
         try:
