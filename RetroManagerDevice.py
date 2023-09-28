@@ -1,10 +1,13 @@
 import os
 import configparser
 import logging
+import shutil
 
 
 
 from RetroManagerCore import RetroManagerCore, rmGame
+import rm_util
+ 
 
 
 class RetroManagerDevice():
@@ -17,6 +20,8 @@ class RetroManagerDevice():
     _static_general_deviceType_DEFAULT = "Generic"
     # [ROMLocations]
     _static_ROMLocations = "ROMLocations"  
+    _static_ROMLocations_DEFAULT = "DEFAULT"
+    _static_ROMLocations_DEFAULT_DEFAULT = "ROMS"
     _static_ROMLocations_GB = "Nintendo - Game Boy"
     _static_ROMLocations_GB_DEFAULT = "GB"
     _static_ROMLocations_GBC = "Nintendo - Game Boy Color"
@@ -78,23 +83,25 @@ class RetroManagerDevice():
         for folder_name, sub_folders, file_names in os.walk(self.mountpoint):
                 for filename in file_names:
                     # Filter for save files
-                    if RetroManagerCore.check_is_game_file(filename):
+                    if rm_util.check_is_game_file(filename):
                         #print(f"Found game: {folder_name} ; {filename}")
                         # Strip the extension to create a title
                         title = os.path.splitext(filename)[0]
                         # Rebuild the filepath
                         file_path = os.path.join(folder_name, filename)
                         # Create the rmGame Objects
-                        gamesList.append(rmGame(-1, title, file_path, RetroManagerCore.detectConsoleFromROM(file_path)))
+                        gamesList.append(rmGame(-1, title, file_path, rm_util.detectConsoleFromROM(file_path)))
         return gamesList  
     
-    def sendGamesToDevice(self, gameslist):
-        if len(gameslist) == 0:
-            print("RetroManagerDevice~sendGamestoDevice: Cant send an empty list of games mate")
-            
-            
-        for game in gameslist:
-            print(f"Sending {game.title} to {self.mountpoint}")
+    def sendGameToDevice(self, game :rmGame):
+        #if len(gameslist) == 0:
+        #    print("RetroManagerDevice~sendGamestoDevice: Cant send an empty list of games mate")
+            print(f"Sending ({game.title}) to ({self.name})")
+            if game.console.lower() == rm_util.console_gb.lower(): #Game Boy
+                shutil.copy(game.filePath,os.path.join(self.mountpoint, self.getROMLocations_GameBoy()))
+            else:
+                shutil.copy(game.filePath,os.path.join(self.mountpoint, self.getROMLocations_DEFAULT()))
+        # TODO send the thumbnail
     
     def createDefaultConfig(self):
         """
@@ -106,9 +113,11 @@ class RetroManagerDevice():
         # We dont need to create the sections, error handling in setVariable will create those for us
         self.setDeviceName(self._static_general_devicename_DEFAULT)
         self.setDeviceType(self._static_general_deviceType_DEFAULT)
+        self.setROMLocations_DEFAULT(self._static_ROMLocations_DEFAULT_DEFAULT)
         self.setROMLocations_GameBoy(self._static_ROMLocations_GB_DEFAULT)
         self.setROMLocations_GameBoyColor(self._static_ROMLocations_GBC_DEFAULT)
         self.setROMLocations_GameBoyAdvance(self._static_ROMLocations_GBA_DEFAULT)
+        self.saveConfig()
 
 
     def saveConfig(self):
@@ -145,6 +154,15 @@ class RetroManagerDevice():
 
     def getDeviceType(self):
         return self.getVariable(self._static_general, self._static_general_deviceType, self._static_general_deviceType_DEFAULT)
+
+    def setROMLocations_DEFAULT(self, newLocation : str):
+        logging.info(f"Setting ROM Location for DEFAULT to ({newLocation})")
+        self.setVariable(self._static_ROMLocations, self._static_ROMLocations_DEFAULT, newLocation)
+
+    def getROMLocations_DEFAULT(self):
+        return self.getVariable(self._static_ROMLocations, self._static_ROMLocations_DEFAULT, self._static_ROMLocations_DEFAULT_DEFAULT)
+
+
 
     def setROMLocations_GameBoy(self, newLocation : str):
         logging.info(f"Setting ROM Location for Game Boy to ({newLocation})")

@@ -13,10 +13,10 @@ import configparser
 import os
 import logging
 
+# List of devices that we're detected on last scan, this is used to compare to find any new devices
 driveHistory = []
+# this is a list of the open devicetabs
 openDevices = []
-
-
 
 RMCore = RetroManagerCore()
 
@@ -32,11 +32,11 @@ class MainWindow (QMainWindow):
     library_columns_Publisher = "Publisher"
     
     library_columns = [
-        "Title",
-        "Console",
-        "Rating",
-        "Series",
-        "Publisher"
+        library_columns_Title,
+        library_columns_Console,
+        library_columns_Rating,
+        library_columns_Series,
+        library_columns_Publisher
     ]    
     
     
@@ -136,9 +136,10 @@ class MainWindow (QMainWindow):
             device_option = rightClick_sendToDevice.addAction("No Devices Connected")
             device_option.setEnabled(False)
         else:
-            for device in openDevices:
-                device_option = rightClick_sendToDevice.addAction(f"Send to {device.name}")
-                device_option.triggered.connect(lambda checked, device=device: self.sendGamesToDevice(device))
+            for tab_device in openDevices:
+                name = tab_device.device.name if tab_device.device.name!="" else tab_device.device.mountpoint
+                device_option = rightClick_sendToDevice.addAction(f"{name}")
+                device_option.triggered.connect(lambda checked, tab_device=tab_device: self.sendGamesToDevice(tab_device))
         # Position
         menu.exec_(activeTab.mapToGlobal(pos))
         
@@ -151,20 +152,28 @@ class MainWindow (QMainWindow):
         # Position
         menu.exec_(activeTab.mapToGlobal(pos)) 
         
-    def sendGamesToDevice(self, device):
+    def sendGamesToDevice(self, tab_device):
+        #TODO add the loading window
         activeTab = self.tabs.currentWidget()
         for item in activeTab.tbl_gamelist.selectedIndexes():
             rmgameitem = activeTab.gameslist[item.row()]
             logging.info(f"RetroManager~sendGamesToDevice: Selected Game - {rmgameitem.title}")
-        print(f"TODO: Implement Sending games to device {device.name} ({device.mountpoint})")
+            tab_device.device.sendGameToDevice(rmgameitem)
+        #Refresh the device table
+        self.reloadTable(tab_device, tab_device.device.scanForGames())
+
+        
       
  
     def sendGamesToLibrary(self):
         activeTab = self.tabs.currentWidget()
+        gamesToAdd = []
         for item in activeTab.tbl_gamelist.selectedIndexes():
             rmgameitem = activeTab.gameslist[item.row()]
             print(f"RetroManager~sendGamesToLibrary: Selected Game - {rmgameitem.title}")
-        print(f"RetroManager~sendGamesToLibrary: TODO: Implement sending games from Device to Library")
+            RMCore.importGame(rmgameitem)
+        #Refresh the library table
+        self.loadAllGamesToLibraryTable()
         return True
     
     def handle_TableEdit(self, tableWidget):
@@ -175,8 +184,8 @@ class MainWindow (QMainWindow):
 
     def testFunction(self):
         print("Running Test Function")
-        print(f"trying to read {openDevices[0]}")
-        openDevices[0].scanForGames()
+        print(f"trying to read {openDevices[0].device}")
+        openDevices[0].device.scanForGames()
          
     
     def menu_openDevice(self):
@@ -189,10 +198,11 @@ class MainWindow (QMainWindow):
     
     def openDevice(self, mountpoint):
         print(f"RetroManager~OpenDevice:    Opening Device {mountpoint}")
-        device = RetroManagerDevice(mountpoint)
-        openDevices.append(device)
+        device = RetroManagerDevice(mountpoint)      
         #Create Library Tab
         tab_openDevice = QWidget()
+        tab_openDevice.device = device
+        openDevices.append(tab_openDevice)
         tabname = ""
         if device.name == "":
             tabname = device.mountpoint
@@ -229,8 +239,11 @@ class MainWindow (QMainWindow):
         tab.tbl_gamelist.itemChanged.disconnect()
         tab.gameslist = tableData
         tab.tbl_gamelist.setRowCount(len(tableData))
-        for i,game in enumerate(tableData):            
-            tab.tbl_gamelist.setItem(i,0,QTableWidgetItem(f"{game.title}")) #Filename
+        for i,game in enumerate(tableData):
+            #Filename
+            cell_filename = QTableWidgetItem(f"{game.title}")
+            cell_filename.setFlags(Qt.ItemIsSelectable|Qt.ItemIsEnabled)            
+            tab.tbl_gamelist.setItem(i,0,cell_filename) #Filename
             tab.tbl_gamelist.setItem(i,1,QTableWidgetItem(f"{game.console}")) #Console
             tab.tbl_gamelist.setItem(i,2,QTableWidgetItem(f"{game.rating}")) #Rating
             tab.tbl_gamelist.setItem(i,3,QTableWidgetItem(f"{game.series}")) #Series
