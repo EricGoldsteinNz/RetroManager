@@ -36,6 +36,14 @@ supported_rom_ext = {
     ".zsf"  : console_snes
 }
 
+
+supported_img_ext = [
+    ".gif",
+    ".jpg",
+    ".jpeg",
+    ".png"
+]
+
 def detectConsoleFromROM(romPath):
     # Check for single use filenames first  
     ext = os.path.splitext(romPath)[1].lower()

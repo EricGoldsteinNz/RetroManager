@@ -96,13 +96,28 @@ class RetroManagerDevice():
     def sendGameToDevice(self, game :rmGame):
         #if len(gameslist) == 0:
         #    print("RetroManagerDevice~sendGamestoDevice: Cant send an empty list of games mate")
-            print(f"Sending ({game.title}) to ({self.name})")
-            if game.console.lower() == rm_util.console_gb.lower(): #Game Boy
-                shutil.copy(game.filePath,os.path.join(self.mountpoint, self.getROMLocations_GameBoy()))
-            else:
-                shutil.copy(game.filePath,os.path.join(self.mountpoint, self.getROMLocations_DEFAULT()))
-        # TODO send the thumbnail
+        print(f"Sending ({game.title}) to ({self.name})")
+        destination = self.getROMLocations_DEFAULT()
+        if game.console.lower() == rm_util.console_gb.lower(): #Game Boy
+            destination = self.getROMLocations_GameBoy()
+            
+        # Copy the game to the device    
+        shutil.copy(game.filePath,os.path.join(self.mountpoint, destination))
+        # Copy the thumbnail
+        cover_path = os.path.splitext(game.filePath)[0]
+        for ext_img in rm_util.supported_img_ext:
+            imgFile = cover_path + ext_img
+            if os.path.exists(imgFile):
+                shutil.copy(imgFile, os.path.join(self.mountpoint, destination))
+                continue
+        # TODO Copy the saves
     
+
+    """
+    """
+    def copySaves(self,game :rmGame):
+        print(f"Trying to copy games for {game.title}")
+
     def createDefaultConfig(self):
         """
         WARNING: Be careful when calling this function as it will overwrite the 

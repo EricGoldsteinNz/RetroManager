@@ -65,7 +65,15 @@ class RetroManagerCore():
                         self.rmdb.addGame(title, new_path, rm_util.detectConsoleFromROM(new_path))
                         logging.info(f"imported file {file_path} as {title}")
                     else:
-                        logging.error(f"Didn't import {file_path}. Bailed for your protection.")                     
+                        logging.error(f"Didn't import {file_path}. Bailed for your protection.")
+
+                    # Import cover image if it exists
+                    cover_path = os.path.splitext(file_path)[0]
+                    for ext_img in rm_util.supported_img_ext:
+                        imgFile = cover_path + ext_img
+                        if os.path.exists(imgFile):
+                            shutil.copy(imgFile, gamefolder)
+                                    
                 return True
             else:
                 logging.warn("RetroManagerCore~importGames: empty list of gamepaths received")
