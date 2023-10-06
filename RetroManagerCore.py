@@ -73,6 +73,9 @@ class RetroManagerCore():
                         imgFile = cover_path + ext_img
                         if os.path.exists(imgFile):
                             shutil.copy(imgFile, gamefolder)
+
+                    # Import the save games
+                            
                                     
                 return True
             else:

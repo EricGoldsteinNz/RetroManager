@@ -49,7 +49,10 @@ class RetroManagerDevice():
 
 
     # [SaveLocations]
-    _static_ROMLocations = "SaveLocations"
+    _static_SaveLocations = "SaveLocations"
+    
+
+
     name = ""
     mountpoint = ""
 
