@@ -2,6 +2,7 @@ import os
 
 # Console Titles
 console_gb = "Game Boy"
+console_megadrive = "Sega Mega Drive"
 console_nes = "NES"
 console_snes = "SNES"
 
@@ -21,18 +22,18 @@ supported_rom_ext = {
     ".gd3"  : console_snes,
     ".gd7"  : console_snes,
     ".gen"  : console_snes,
-    ".md"   : "MegaDrive",
+    ".md"   : console_megadrive,
     ".nes"  : console_nes,
     ".nez"  : console_nes,
     ".sfc"  : console_snes,
     ".smc"  : console_snes,
-    ".smd"  : "MegaDrive",
+    ".smd"  : console_megadrive,
     ".sms"  : "Sega Master System",
     ".zfb"  : "Arcade (Final Burn)",
     ".zfc"  : console_nes,
     ".zgb"  : "", # Used by SF2000 for Game Boy, Game Boy Color, and Game Boy Advance
     ".zip"  : "",
-    ".zmd"  : "MegaDrive",
+    ".zmd"  : console_megadrive,
     ".zsf"  : console_snes
 }
 
@@ -42,6 +43,14 @@ supported_img_ext = [
     ".jpg",
     ".jpeg",
     ".png"
+]
+
+supported_sav_ext = [
+    ".sav", # Generic save ext used almost everywhere
+    ".sa0",
+    ".sa1",
+    ".sa2",
+    ".sa3",
 ]
 
 def detectConsoleFromROM(romPath):

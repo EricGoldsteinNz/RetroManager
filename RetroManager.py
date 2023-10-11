@@ -2,7 +2,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-
+ 
 #RetroManager imports
 from RetroManagerDatabase import *
 from RetroManagerCore import *
@@ -55,6 +55,7 @@ class MainWindow (QMainWindow):
         #Load the ribbon Menus  
         self.loadMenus()     
         
+        self.loadToolbar()
        
         
         self.layout = QGridLayout(widget)
@@ -125,7 +126,23 @@ class MainWindow (QMainWindow):
         #Library Menu 
         self.action_AddGamesIcon = QAction("Add Games...", self, triggered=self.importGames)    
         self.menu_addGame= self.menuBar().addAction(self.action_AddGamesIcon)
-        
+
+    def loadToolbar(self):
+        toolbar = QToolBar("Toolbar")
+        toolbar.toggleViewAction().setEnabled(False)
+        toolbar.setIconSize(QSize(64,64))
+        self.addToolBar(toolbar)
+
+        # Add ROMs 
+        action_AddROM = QAction(QIcon("icons/nintendo.png"), "Add new ROMs to your library", self, triggered=self.importGames)
+        action_AddROM.setStatusTip("Add new ROMs to your library")
+        toolbar.addAction(action_AddROM)
+
+        # Sync Saves
+        self.action_syncDevice = QAction(QIcon("icons/nintendo.png"), "Sync Device with Library", self, triggered=self.syncOpenDevice)
+        self.action_syncDevice.setStatusTip("Sync Device with Library")
+        toolbar.addAction(action_AddROM)
+
     def loadRightClickMenu_LibraryTable(self, pos):
         menu = QMenu()
         activeTab = self.tabs.currentWidget()
@@ -151,6 +168,9 @@ class MainWindow (QMainWindow):
         rightClick_sendToLibrary.triggered.connect(self.sendGamesToLibrary)
         # Position
         menu.exec_(activeTab.mapToGlobal(pos)) 
+
+    def syncOpenDevice(self):
+        print("syncing device with library")
         
     def sendGamesToDevice(self, tab_device):
         #TODO add the loading window
@@ -160,10 +180,7 @@ class MainWindow (QMainWindow):
             logging.info(f"RetroManager~sendGamesToDevice: Selected Game - {rmgameitem.title}")
             tab_device.device.sendGameToDevice(rmgameitem)
         #Refresh the device table
-        self.reloadTable(tab_device, tab_device.device.scanForGames())
-
-        
-      
+        self.reloadTable(tab_device, tab_device.device.scanForGames())  
  
     def sendGamesToLibrary(self):
         activeTab = self.tabs.currentWidget()
@@ -299,7 +316,7 @@ class MainWindow (QMainWindow):
 
 
 # Initialise logging
-print(f"{static_LoggingPath}")
+print(f"Setting logging path to ({static_LoggingPath})")
 logging.basicConfig(filename=static_LoggingPath,
                         filemode='a',
                         format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',

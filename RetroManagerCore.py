@@ -40,7 +40,6 @@ class RetroManagerCore():
                 for file_path in gamePaths:
                     # TODO Check if the game is already in Database and offer to merge?
 
-
                     new_path = False
                     gamefolder = os.path.join(self.filepath_library,os.path.splitext(os.path.basename(file_path))[0])
                     # If the game folder doesn't exist then create it
@@ -83,7 +82,13 @@ class RetroManagerCore():
         except Exception as e:
             logging.error(f"RetroManagerCore~importGames: {str(e)}")
         return False      
-        
+
+    def importSavesForROMfromDevice(self, gamePath):
+        # Should probably pull sve locations from the device config file,
+        # Otherwise just read from the same directory the game is in
+
+        return False   
+
     def retrieveGamesFromLocation(self, basePath):
         return False
     

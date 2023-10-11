@@ -1,5 +1,6 @@
 import sqlite3
 import logging
+import hashlib
 
 class RetroManagerDatabase():
 
@@ -8,21 +9,24 @@ class RetroManagerDatabase():
         super().__init__()
         # Connect to the database, if it doesnt exist this call will instantiate one
         logging.info(f"Creating or opening {location}")
-        self.db = sqlite3.connect(location)
-        
+        self.db = sqlite3.connect(location)      
         self.dbcursor = self.db.cursor()
         
         #Validate the required tables exist
+        # TODO need to validate that the tables have the correct columns as well.
         res = self.dbcursor.execute("SELECT name FROM sqlite_master where name = 'developer'")
         if (res.fetchone() is None):
+            logging.info("RMDB: (developer) table not found, creating one")
             self.dbcursor.execute("CREATE TABLE developer(id INTEGER PRIMARY KEY, name TEXT)")
         
         res = self.dbcursor.execute("SELECT name FROM sqlite_master where name = 'series'")
         if (res.fetchone() is None):
+            logging.info("RMDB: series table not found, creating one")
             self.dbcursor.execute("CREATE TABLE series(id INTEGER PRIMARY KEY, name TEXT)")
         
         res = self.dbcursor.execute("SELECT name FROM sqlite_master where name = 'games'")
         if (res.fetchone() is None):
+            logging.info("RMDB: (games) table not found, creating one")
             self.dbcursor.execute("""
             CREATE TABLE games( id INTEGER PRIMARY KEY, 
                                 title TEXT, 
@@ -32,10 +36,25 @@ class RetroManagerDatabase():
                                 seriesid, 
                                 rating INTEGER CHECK(rating >=0 AND rating <=100), 
                                 date TIMESTAMP,
+                                sha256hash TEXT,
                                 FOREIGN KEY(developerid) REFERENCES developer(id), 
                                 FOREIGN KEY(seriesid) REFERENCES series(id)
                                 )""")
-                                
+
+    def validateTableGames(self):
+        self.ensureColumnIsInTable("games","sha256hash","TEXT")
+
+
+    def ensureColumnIsInTable(self, table, column, data_type):
+        # TODO check table exists
+        # TODO check if column already exists rather than assuming ALTER wont break anything
+        try:
+            self.dbcursor.execute(f"ALTER TABLE {table} ADD {column} {data_type}")
+        except Exception as e:
+            logging.info(f"RMDB~ValidateTableGames: not adding column ({column}) to ({table})")
+
+
+
     """
     This function retrieves a list of games from the RetroManagerDatabase.
     A filter string can be supplied, which currently does nothing.
@@ -112,3 +131,23 @@ class rmGame():
         self.filePath = gameFilePath
         self.console = gameConsole
         
+class rmSave():
+
+    def __init__(self, gameID, saveFilePath, saveFormat):
+        super().__init__()
+        self.gameDBID = gameID
+        self.filePath = saveFilePath
+        self.saveFormat = saveFormat
+        self.hash = ""
+        try:
+            BUF_SIZE = 4194304  # Reading in chunks of 4MB. There is no reason that this has to be this value, we can change it to anything.
+            sha256 = hashlib.sha256()
+            with open(saveFilePath, 'rb') as f:
+                while True:
+                    data = f.read(BUF_SIZE)
+                    if not data:
+                        break
+                    sha256.update(data)
+            self.hash = sha256.hexdigest()
+        except Exception as e:
+            logging.error(f"RetroManageDatabase~rmSave: {str(e)}")
