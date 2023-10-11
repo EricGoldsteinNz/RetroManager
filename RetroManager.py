@@ -117,15 +117,12 @@ class MainWindow (QMainWindow):
         self.action_Test = QAction("Test Function", self,triggered=self.testFunction)
         self.menu_file.addAction(self.action_Test)
         
-        
+        """
         #Library Menu     
         self.menu_library = self.menuBar().addMenu("&Library")
         self.action_AddGames = QAction("Add Games...", self, triggered=self.importGames)
         self.menu_library.addAction(self.action_AddGames)
-        
-        #Library Menu 
-        self.action_AddGamesIcon = QAction("Add Games...", self, triggered=self.importGames)    
-        self.menu_addGame= self.menuBar().addAction(self.action_AddGamesIcon)
+        """
 
     def loadToolbar(self):
         toolbar = QToolBar("Toolbar")
@@ -133,15 +130,27 @@ class MainWindow (QMainWindow):
         toolbar.setIconSize(QSize(64,64))
         self.addToolBar(toolbar)
 
+        # TODO Open Device button?
+
         # Add ROMs 
-        action_AddROM = QAction(QIcon("icons/nintendo.png"), "Add new ROMs to your library", self, triggered=self.importGames)
-        action_AddROM.setStatusTip("Add new ROMs to your library")
-        toolbar.addAction(action_AddROM)
+        self.toolbaraction_AddROM = QAction(QIcon("icons/addrom.png"), "Add new ROMs to your library", self, triggered=self.importGames)
+        self.toolbaraction_AddROM.setStatusTip("Add new ROMs to your library")
+        toolbar.addAction(self.toolbaraction_AddROM)
 
         # Sync Saves
-        self.action_syncDevice = QAction(QIcon("icons/nintendo.png"), "Sync Device with Library", self, triggered=self.syncOpenDevice)
-        self.action_syncDevice.setStatusTip("Sync Device with Library")
-        toolbar.addAction(action_AddROM)
+        self.toolbaraction_syncDevice = QAction(QIcon("icons/devicesync.png"), "Sync Saves with Library", self, triggered=self.syncOpenDevice)
+        self.toolbaraction_syncDevice.setStatusTip("Sync Device with Library")
+        toolbar.addAction(self.toolbaraction_syncDevice)
+
+        # Donate
+        self.toolbaraction_donate = QAction(QIcon("icons/donate.png"), "Donate", self, triggered=self.ToDoBox)
+        self.toolbaraction_donate.setStatusTip("Donate to support RetroManager Development")
+        toolbar.addAction(self.toolbaraction_donate)
+
+        # Settings
+        self.toolbaraction_settings = QAction(QIcon("icons/settings.png"), "Settings", self, triggered=self.ToDoBox)
+        self.toolbaraction_settings.setStatusTip("Open Settings")
+        toolbar.addAction(self.toolbaraction_settings)
 
     def loadRightClickMenu_LibraryTable(self, pos):
         menu = QMenu()
@@ -171,6 +180,12 @@ class MainWindow (QMainWindow):
 
     def syncOpenDevice(self):
         print("syncing device with library")
+
+    def ToDoBox(self):
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Under Development")
+        msg.setText("This Feature is still under development.")
+        msg.exec_()
         
     def sendGamesToDevice(self, tab_device):
         #TODO add the loading window
