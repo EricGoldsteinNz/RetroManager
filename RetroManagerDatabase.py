@@ -39,6 +39,20 @@ class RetroManagerDatabase():
                                 sha256hash TEXT,
                                 FOREIGN KEY(developerid) REFERENCES developer(id), 
                                 FOREIGN KEY(seriesid) REFERENCES series(id)
+                                )""")        
+
+        res = self.dbcursor.execute("SELECT name FROM sqlite_master where name = 'saves'")
+        if (res.fetchone() is None):
+            logging.info("RMDB: (saves) table not found, creating one")
+            self.dbcursor.execute("""
+            CREATE TABLE saves( id INTEGER PRIMARY KEY,
+                                gameid, 
+                                title TEXT, 
+                                filepath TEXT, 
+                                notes TEXT, 
+                                date TIMESTAMP,
+                                sha256hash TEXT,
+                                FOREIGN KEY(gameid) REFERENCES games(id)
                                 )""")
 
     def validateTableGames(self):
@@ -107,6 +121,29 @@ class RetroManagerDatabase():
             print(f"error while updating game: {(e)}")
         return False
     
+    """
+    Delete Games
+    """
+
+
+    """
+    Create Save
+    """
+
+
+    """
+    Get Save
+    """
+
+
+    """
+    Update Save
+    """
+    
+
+    """
+    Delete Save
+    """
     
     def addSeries(self, name):
         print(f"Adding series: {name}")

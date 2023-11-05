@@ -118,8 +118,12 @@ class RetroManagerDevice():
 
     """
     """
-    def copySaves(self,game :rmGame):
-        print(f"Trying to copy games for {game.title}")
+    def sendSavesToLibrary(self,game :rmGame):
+        logging.info(f"RetroManagerDevice~sendSavesToLibrary: {game.title}")
+
+    def sendSavesToDevice(self, game:rmGame):
+        logging.info(f"RetroManagerDevice~sendSavesToDevice: {game.title}")
+
 
     def createDefaultConfig(self):
         """
@@ -179,8 +183,6 @@ class RetroManagerDevice():
 
     def getROMLocations_DEFAULT(self):
         return self.getVariable(self._static_ROMLocations, self._static_ROMLocations_DEFAULT, self._static_ROMLocations_DEFAULT_DEFAULT)
-
-
 
     def setROMLocations_GameBoy(self, newLocation : str):
         logging.info(f"Setting ROM Location for Game Boy to ({newLocation})")
