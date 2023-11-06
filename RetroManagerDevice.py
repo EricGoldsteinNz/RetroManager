@@ -5,7 +5,7 @@ import shutil
 
 
 
-from RetroManagerCore import RetroManagerCore, rmGame
+from RetroManagerCore import RetroManagerCore, rmGame, rmSave
 import rm_util
  
 
@@ -118,11 +118,11 @@ class RetroManagerDevice():
 
     """
     """
-    def sendSavesToLibrary(self,game :rmGame):
+    def sendSaveToLibrary(self,game :rmGame):
         logging.info(f"RetroManagerDevice~sendSavesToLibrary: {game.title}")
 
-    def sendSavesToDevice(self, game:rmGame):
-        logging.info(f"RetroManagerDevice~sendSavesToDevice: {game.title}")
+    def sendSaveToDevice(self, save:rmSave):
+        logging.info(f"RetroManagerDevice~sendSaveToDevice: {save.title}")
 
 
     def createDefaultConfig(self):

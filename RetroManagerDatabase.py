@@ -51,7 +51,7 @@ class RetroManagerDatabase():
                                 filepath TEXT, 
                                 notes TEXT, 
                                 date TIMESTAMP,
-                                sha256hash TEXT,
+                                hash TEXT,
                                 FOREIGN KEY(gameid) REFERENCES games(id)
                                 )""")
 
@@ -123,16 +123,41 @@ class RetroManagerDatabase():
     
     """
     Delete Games
+    TODO: Need to make sure that we delete any linked saves
     """
-
+    def deleteGame(self, game):
+        try:
+            if game.dbID == -1:
+                logging.error(f"RMDB~deleteGame: invalid databaseID passed in")
+                return False
+            logging.info(f"RMDB~deleteGame: {game.title}")
+            self.dbcursor.execute("DELETE FROM games WHERE id = ?",(game.dbID))
+            self.db.commit()
+            return True
+        except Exception as e:
+            logging.error(f"error while deleting game: {(e)}")
+        return False
 
     """
     Create Save
     """
-
+    def createSave(self, gameID=-1, title="", filepath="", notes="", date=-1, hash =""):
+        try:
+            logging.info(f"RMDB~createSave: {title}")
+            self.dbcursor.execute("INSERT INTO saves(gameid, title, filepath, notes, date, hash) values (?,?,?,?,?,?)",(gameID, title, filepath, notes, date, hash))
+            self.db.commit()
+            return True
+        except Exception as e:
+            logging.error(f"RMDB~createSave: EXCEPTION {(e)}")
+        return False
 
     """
-    Get Save
+    Get Save by ID
+    """
+    
+
+    """
+    Get All Saves for Game
     """
 
 

@@ -209,7 +209,7 @@ class MainWindow (QMainWindow):
         return True
     
     def handle_TableEdit(self, tableWidget):
-        print(f"RetroManager~handle_TableEdit: table widget changed {tableWidget}")
+        logging.info(f"RetroManager~handle_TableEdit: table widget changed {tableWidget}")
 
     def about(self):
         QMessageBox.about(self, "About RetroManager","RetroManager was created by EricGoldstein because he got sick of losing all his saves")
