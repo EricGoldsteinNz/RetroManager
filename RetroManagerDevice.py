@@ -5,7 +5,7 @@ import shutil
 
 
 
-from RetroManagerCore import RetroManagerCore, rmGame, rmSave
+from RetroManagerDatabase import rmGame, rmSave
 import rm_util
  
 
@@ -85,13 +85,13 @@ class RetroManagerDevice():
         gamesList = []
         for folder_name, sub_folders, file_names in os.walk(self.mountpoint):
                 for filename in file_names:
+                    # Rebuild the filepath
+                    file_path = os.path.join(folder_name, filename)
                     # Filter for save files
-                    if rm_util.check_is_game_file(filename):
+                    if rm_util.check_is_game_file(file_path):
                         #print(f"Found game: {folder_name} ; {filename}")
                         # Strip the extension to create a title
-                        title = os.path.splitext(filename)[0]
-                        # Rebuild the filepath
-                        file_path = os.path.join(folder_name, filename)
+                        title = os.path.splitext(filename)[0]                        
                         # Create the rmGame Objects
                         gamesList.append(rmGame(-1, title, file_path, rm_util.detectConsoleFromROM(file_path)))
         return gamesList  
@@ -118,8 +118,22 @@ class RetroManagerDevice():
 
     """
     """
-    def sendSaveToLibrary(self,game :rmGame):
-        logging.info(f"RetroManagerDevice~sendSavesToLibrary: {game.title}")
+    def scanForSaves(self):
+        logging.info(f"RetroManagerDevice~scanForSaves: ({self.name})@({self.mountpoint})")
+        # Find the saves on the device
+        savesList = []
+        for folder_name, sub_folders, file_names in os.walk(self.mountpoint):
+                for filename in file_names:
+                    # Filter for save files
+                    if rm_util.check_is_save_file(filename):
+                        # Strip the extension to create a title
+                        title = os.path.splitext(filename)[0]
+                        # Rebuild the filepath
+                        file_path = os.path.join(folder_name, filename)
+                        # Create the rmGame Objects
+                        # gameID, saveFilePath, saveFormat=""
+                        savesList.append(rmSave(-1, file_path, ""))
+        return savesList 
 
     def sendSaveToDevice(self, save:rmSave):
         logging.info(f"RetroManagerDevice~sendSaveToDevice: {save.title}")

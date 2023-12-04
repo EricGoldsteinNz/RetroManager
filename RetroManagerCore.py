@@ -1,11 +1,15 @@
 #OS imports
+import hashlib
 import shutil
 import os
 import sys
 import string
 import configparser
 
+from datetime import datetime
+
 from RetroManagerDatabase import *
+import RetroManagerDevice
 import rm_util
 
 
@@ -83,15 +87,38 @@ class RetroManagerCore():
             logging.error(f"RetroManagerCore~importGames: {str(e)}")
         return False      
 
-    def importSavesForROMfromDevice(self, gamePath):
-        # Should probably pull sve locations from the device config file,
-        # Otherwise just read from the same directory the game is in
+    def importSaves(self, device: RetroManagerDevice):
+        # Add the saves to the library
+        listOfSaves = device.scanForSaves()
+        print(f"Found ({len(listOfSaves)}) save files.")
+        for save in listOfSaves:
+            # Build the save title
+            title = os.path.splitext(os.path.split(save.filePath)[1])[0] + f" - {datetime.utcfromtimestamp(os.path.getmtime(save.filePath)).strftime('%Y%m%d_%H%M%S')}"
+            savefolder = os.path.join(self.filepath_library,"_saves")
+            # If the save folder doesn't exist then create it
+            if not os.path.exists(savefolder):
+                    os.makedirs(savefolder, exist_ok=True)# Create directory if it doesnt exist
+            #Copy the save to the saves folder. TODO replace this with matching it to a game
+            NewSavepath = os.path.join(savefolder, title + os.path.splitext(save.filePath)[1])
+            if not os.path.exists(NewSavepath):
+                new_path = shutil.copy(save.filePath, NewSavepath)
+            if(new_path):
+                sha256hash = compute_sha256(new_path)
+                self.rmdb.createSave(save.gameDBID, title, new_path, "", os.path.getmtime(save.filePath), sha256hash)
+            else:
+                logging.error(f"RetroManagerCore~importSaves: ERROR importing save ({NewSavepath})")
 
         return False   
 
     def retrieveGamesFromLocation(self, basePath):
         return False
-    
+
+def compute_sha256(file_name):
+    hash_sha256 = hashlib.sha256()
+    with open(file_name, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_sha256.update(chunk)
+    return hash_sha256.hexdigest()    
     
         
         

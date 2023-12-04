@@ -117,12 +117,12 @@ class MainWindow (QMainWindow):
         self.action_Test = QAction("Test Function", self,triggered=self.testFunction)
         self.menu_file.addAction(self.action_Test)
         
-        """
-        #Library Menu     
-        self.menu_library = self.menuBar().addMenu("&Library")
-        self.action_AddGames = QAction("Add Games...", self, triggered=self.importGames)
-        self.menu_library.addAction(self.action_AddGames)
-        """
+        
+        #Device Menu     
+        self.menu_device = self.menuBar().addMenu("&Device")
+        self.action_ImportSaves = QAction("Import Saves", self, triggered=self.importSavesFromDevice)
+        self.menu_device.addAction(self.action_ImportSaves)
+        
 
     def loadToolbar(self):
         toolbar = QToolBar("Toolbar")
@@ -175,6 +175,8 @@ class MainWindow (QMainWindow):
         activeTab = self.tabs.currentWidget()
         rightClick_sendToLibrary = menu.addAction("Send to Library")
         rightClick_sendToLibrary.triggered.connect(self.sendGamesToLibrary)
+        rightClick_openInfo = menu .addAction("Open Details")
+        rightClick_openInfo.triggered.connect(self.openDetails(False))
         # Position
         menu.exec_(activeTab.mapToGlobal(pos)) 
 
@@ -202,12 +204,29 @@ class MainWindow (QMainWindow):
         gamesToAdd = []
         for item in activeTab.tbl_gamelist.selectedIndexes():
             rmgameitem = activeTab.gameslist[item.row()]
-            print(f"RetroManager~sendGamesToLibrary: Selected Game - {rmgameitem.title}")
+            logging.info(f"RetroManager~sendGamesToLibrary: Selected Game - {rmgameitem.title}")
             RMCore.importGame(rmgameitem)
         #Refresh the library table
         self.loadAllGamesToLibraryTable()
         return True
     
+    def openDetails(self, edittable = False):
+        activeTab = self.tabs.currentWidget()
+        gamesToAdd = []
+        for item in activeTab.tbl_gamelist.selectedIndexes():
+            rmgameitem = activeTab.gameslist[item.row()]
+            logging.info(f"RetroManager~openDetails: Selected Game - {rmgameitem.title}")
+            #TODO open a dialog showing the game details
+    
+    def importSavesFromDevice(self):
+        # TODO !!!!!!!!!!!!!!!!
+        activeTab = self.tabs.currentWidget()
+        # Check that the active tab is not the library  
+        logging.info(f"RetroManager~importSavesFromDevice: {activeTab.device.name}")
+        # Get the list of saves from the device
+        RMCore.importSaves(activeTab.device)
+        return True
+
     def handle_TableEdit(self, tableWidget):
         logging.info(f"RetroManager~handle_TableEdit: table widget changed {tableWidget}")
 

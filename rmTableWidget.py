@@ -7,6 +7,7 @@ class rmTableWidget(QTableWidgetItem):
         super().__init__()
         self.game = game
         
-    def setData(self)    
+    def setData(self):
+        print("todo")
         
     

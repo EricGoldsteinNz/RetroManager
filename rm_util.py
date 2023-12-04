@@ -1,4 +1,5 @@
 import os
+import zipfile
 
 # Console Titles
 console_gb = "Game Boy"
@@ -51,9 +52,15 @@ supported_sav_ext = [
     ".sa1",
     ".sa2",
     ".sa3",
+    ".srm"
 ]
 
 def detectConsoleFromROM(romPath):
+    #If its a zip file peek inside
+    if(romPath.lower().endswith(".zip")):
+       romPath = getBiggestFileFromZip(romPath)
+    if romPath == "":
+        return "";
     # Check for single use filenames first  
     ext = os.path.splitext(romPath)[1].lower()
     console = supported_rom_ext.get(ext,"")
@@ -74,8 +81,27 @@ def convertToHumanReadableFilesize(filesize : int) -> str:
     else: #Less than 1 Kilobyte
         humanReadableFileSize = f"{filesize} Bytes"
 
-def check_is_game_file(filename):
+def check_is_game_file(filePath):
+    #If its a zip file peek inside
+    if(filePath.lower().endswith(".zip")):
+       filePath = getBiggestFileFromZip(filePath)
     for ext in supported_rom_ext:
-        if filename.lower().endswith(ext):
+        if filePath.lower().endswith(ext):
             return True
     return False
+
+def check_is_save_file(filePath):
+    for ext in supported_sav_ext:
+        if filePath.lower().endswith(ext):
+            return True
+    return False
+
+def getBiggestFileFromZip(zipPath):
+    zipFileList = zipfile.ZipFile(zipPath).infolist()
+    biggest = ""
+    biggestSize = 0
+    for f in zipFileList:
+        if f.file_size > biggestSize:
+            biggest = f.filename
+            biggestSize = f.file_size
+    return biggest

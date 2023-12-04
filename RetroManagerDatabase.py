@@ -195,7 +195,7 @@ class rmGame():
         
 class rmSave():
 
-    def __init__(self, gameID, saveFilePath, saveFormat):
+    def __init__(self, gameID, saveFilePath, saveFormat=""):
         super().__init__()
         self.gameDBID = gameID
         self.filePath = saveFilePath
